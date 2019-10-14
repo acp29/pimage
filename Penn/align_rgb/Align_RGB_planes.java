@@ -683,19 +683,25 @@ implements ActionListener, AdjustmentListener, ItemListener, WindowListener, Run
 			else if (e.getSource() == chkRed) {
 				f[0] = chkRed.getState()?1:0;
 				if (f[0] == 0) {
-					updatergb(); // update planes (out of frame image data is lost!)
+					if ( (chkGreen.getState() == true) && (chkBlue.getState() == true)) {
+						updatergb(); // update planes (out of frame image data is lost!)
+					}
 				}
 			}
 			else if (e.getSource() == chkGreen) {
 				f[1] = chkGreen.getState()?1:0;
 				if (f[1] == 0) {
-					updatergb(); // update planes (out of frame image data is lost!)
+					if ( (chkRed.getState() == true) && (chkBlue.getState() == true)) {
+						updatergb(); // update planes (out of frame image data is lost!)
+					}
 				}
 			}
 			else if (e.getSource() == chkBlue) {
 				f[2] = chkBlue.getState()?1:0;
 				if (f[2] == 0) {
-					updatergb(); // update planes (out of frame image data is lost!)
+					if ( (chkRed.getState() == true) && (chkGreen.getState() == true)) {
+						updatergb(); // update planes (out of frame image data is lost!)
+					}
 				}
 			}
 			for(y=0;y<ye;y++) {
