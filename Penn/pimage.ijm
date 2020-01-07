@@ -18,8 +18,8 @@ macro "PrepareImages" {
 	path_red = File.openDialog("Load red image");
 	open(path_red);
 	w = getWidth();
-    h = getHeight();
-    path = getDirectory("image");
+	h = getHeight();
+	path = getDirectory("image");
 	if (bitDepth() == 24) {
 		rename("1");
 		run("Split Channels");
@@ -39,7 +39,7 @@ macro "PrepareImages" {
 	if (path != getDirectory("image")) {
 		exit("Images must come from the same directory");
 	}
-		if (bitDepth() == 24) {
+	if (bitDepth() == 24) {
 		rename("2");
 		run("Split Channels");
 		close("2 (red)");
@@ -72,7 +72,7 @@ macro "PrepareImages" {
 	// Subtract uneven background
 	//run("Subtract Background...", "rolling=500 separate");
 
-    // Split channels
+	// Split channels
 	setBatchMode("true");
 	run("Split Channels");
 	close("Stack (RGB) (blue)");
@@ -82,20 +82,20 @@ macro "PrepareImages" {
 	run("Subtract Background...", "rolling=500 separate"); // Subtract uneven background
 	red_fname = File.getName(path_red);
 	i =  lastIndexOf(red_fname,".");
-    red_fname = substring(red_fname,0,i);
+	red_fname = substring(red_fname,0,i);
 	saveAs("Tiff",path+red_fname+"_red");
 	selectWindow("Stack (RGB) (green)");
 	green_fname = File.getName(path_green);
 	i =  lastIndexOf(green_fname,".");
-    green_fname = substring(green_fname,0,i);
+	green_fname = substring(green_fname,0,i);
 	saveAs("Tiff",path+green_fname+"_green");
 
 	// Combine regions of interest
 	selectWindow(red_fname+"_red.tif");
-    roiManager("Select",newArray(0,1));  // Select background and whole-cell ROI
-    roiManager("Combine");               // Combine ROI selections
-    roiManager("Add");                   // Add combined selection to ROI manager
-    run("Select All");
+	roiManager("Select",newArray(0,1));  // Select background and whole-cell ROI
+	roiManager("Combine");               // Combine ROI selections
+	roiManager("Add");                   // Add combined selection to ROI manager
+	run("Select All");
 
 	// Save ROIs
 	roiManager("Deselect");
@@ -122,12 +122,12 @@ macro "PrepareImages_48bit_Color" {
 	// Load the Homer1c-tdTomato (red) and SEP-GluN1 (green) images
 	path_red = File.openDialog("Load red image");
 	run("Bio-Formats Importer", "open=[path_red] color_mode=Grayscale rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT");
-    rename("temp");
-    run("Hyperstack to Stack");
-    run("Stack to RGB");
+	path = getDirectory("image");
+	rename("temp");
+	run("Hyperstack to Stack");
+	run("Stack to RGB");
 	w = getWidth();
-    h = getHeight();
-    path = getDirectory("image");
+	h = getHeight();
 	if (bitDepth() == 24) {
 		rename("1");
 		run("Split Channels");
@@ -140,19 +140,16 @@ macro "PrepareImages_48bit_Color" {
 	run("Remove Outliers...", "radius=2 threshold=50 which=Bright");
 	run("Remove Outliers...", "radius=2 threshold=50 which=Dark");
 	selectWindow("temp");
-    close();
+	close();
 	path_green = File.openDialog("Load green image");
 	run("Bio-Formats Importer", "open=[path_green] color_mode=Grayscale rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT");
-    rename("temp");
-    run("Hyperstack to Stack");
-    run("Stack to RGB");
+	rename("temp");
+	run("Hyperstack to Stack");
+	run("Stack to RGB");
 	if ( (w != getWidth()) || (h != getHeight()) ) {
 		exit("Images must have the same dimenions");
 	}
-	if (path != getDirectory("image")) {
-		exit("Images must come from the same directory");
-	}
-		if (bitDepth() == 24) {
+	if (bitDepth() == 24) {
 		rename("2");
 		run("Split Channels");
 		close("2 (red)");
@@ -164,7 +161,7 @@ macro "PrepareImages_48bit_Color" {
 	run("Remove Outliers...", "radius=2 threshold=50 which=Bright");
 	run("Remove Outliers...", "radius=2 threshold=50 which=Dark");
 	selectWindow("temp");
-    close();
+	close();
 
 	// Perform image alignment
 	run("Images to Stack", "name=Stack title=[] use");
@@ -187,7 +184,7 @@ macro "PrepareImages_48bit_Color" {
 	// Subtract uneven background
 	//run("Subtract Background...", "rolling=500 separate");
 
-    // Split channels
+	// Split channels
 	setBatchMode("true");
 	run("Split Channels");
 	close("Stack (RGB) (blue)");
@@ -197,20 +194,20 @@ macro "PrepareImages_48bit_Color" {
 	run("Subtract Background...", "rolling=500 separate"); // Subtract uneven background
 	red_fname = File.getName(path_red);
 	i =  lastIndexOf(red_fname,".");
-    red_fname = substring(red_fname,0,i);
+	red_fname = substring(red_fname,0,i);
 	saveAs("Tiff",path+red_fname+"_red");
 	selectWindow("Stack (RGB) (green)");
 	green_fname = File.getName(path_green);
 	i =  lastIndexOf(green_fname,".");
-    green_fname = substring(green_fname,0,i);
+	green_fname = substring(green_fname,0,i);
 	saveAs("Tiff",path+green_fname+"_green");
 
 	// Combine regions of interest
 	selectWindow(red_fname+"_red.tif");
-    roiManager("Select",newArray(0,1));  // Select background and whole-cell ROI
-    roiManager("Combine");               // Combine ROI selections
-    roiManager("Add");                   // Add combined selection to ROI manager
-    run("Select All");
+	roiManager("Select",newArray(0,1));  // Select background and whole-cell ROI
+	roiManager("Combine");               // Combine ROI selections
+	roiManager("Add");                   // Add combined selection to ROI manager
+	run("Select All");
 
 	// Save ROIs
 	roiManager("Deselect");
@@ -238,10 +235,10 @@ macro "SpineFluorMeasure" {
 	// Load the Homer1c-tdTomato (red) and SEP-GluN1 (green) images
 	path_red = File.openDialog("Load red image");
 	open(path_red);
-	w = getWidth();
-    h = getHeight();
+	w = getWidth();	
+	h = getHeight();
 	path = getDirectory("image");
-    path_green = File.openDialog("Load green image");
+	path_green = File.openDialog("Load green image");
 	open(path_green);
 	if ( (w != getWidth()) || (h != getHeight()) ) {
 		exit("Images must have the same dimenions");
@@ -256,14 +253,14 @@ macro "SpineFluorMeasure" {
 	path_roi = File.openDialog("Load prepROI.zip");
 	roiManager("Open",path_roi);
 
-    // Crop ROIs in red image
-    selectWindow(red_fname);
-    roiManager("Select",2);
-    run("Copy");
-    newImage('cell',"8-bit black",w,h,1);
-    roiManager("Select",2);
-    run("Paste");
-    run("Select All");
+	// Crop ROIs in red image
+	selectWindow(red_fname);
+	roiManager("Select",2);
+	run("Copy");
+	newImage('cell',"8-bit black",w,h,1);
+	roiManager("Select",2);
+	run("Paste");
+	run("Select All");
 
 	// Perform local thresholding and create mask and ROI of cell
 	selectWindow('cell');
@@ -275,49 +272,49 @@ macro "SpineFluorMeasure" {
 	run("Subtract...","value="+bg);
 	run("Enhance Contrast", "saturated=0.0");
 	run("Apply LUT");
-    run("Gaussian Blur...");
-    run("Auto Local Threshold", "method=Phansalkar radius=15 parameter_1=0 parameter_2=0 white");
+	run("Gaussian Blur...");	
+	run("Auto Local Threshold", "method=Phansalkar radius=15 parameter_1=0 parameter_2=0 white");
 	run("Median...", "radius=10"); // Despeckle
 	run("Create Selection");
-    run("Make Inverse");
-    roiManager("Add");
-    run("Select All");
+	run("Make Inverse");
+	roiManager("Add");
+	run("Select All");
 
 	// Use median filter and global thresholding to create mask and ROI of synapses
 	selectWindow(red_fname);
 	roiManager("Select",1);
-    run("Copy");
-    run("Select None");
-    newImage("original","8-bit black",w,h,1);
-    roiManager("Select",1);
-    run("Paste");
-    newImage("filtered","8-bit black",w,h,1);
-    roiManager("Select",1);
-    run("Paste");
-    run("Median...");
-    imageCalculator("Subtract create", "original","filtered");
+	run("Copy");
+	run("Select None");
+	newImage("original","8-bit black",w,h,1);
+	roiManager("Select",1);
+	run("Paste");
+	newImage("filtered","8-bit black",w,h,1);
+	roiManager("Select",1);
+	run("Paste");
+	run("Median...");
+	imageCalculator("Subtract create", "original","filtered");
 	close("original");
 	close("filtered");
-    roiManager("Select",1);
-    run("Threshold...");
+	roiManager("Select",1);
+	run("Threshold...");
 	setThreshold(0,255);
-    call("ij.plugin.frame.ThresholdAdjuster.setMode", "B&W");
-    waitForUser("Alignment","Manually adjust global threshold then press OK");
-    run("Convert to Mask");
-    run("Median...","radius=1"); // Despeckle
+	call("ij.plugin.frame.ThresholdAdjuster.setMode", "B&W");
+	waitForUser("Alignment","Manually adjust global threshold then press OK");
+	run("Convert to Mask");
+	run("Median...","radius=1"); // Despeckle
 	run("Create Selection");
-    run("Make Inverse");
+	run("Make Inverse");
 	roiManager("Add");
 	rename("synapses");
-    run("Select None");
+	run("Select None");
 
 	// Combine synapse and cell ROI for total ROI
 	selectWindow(red_fname);
-	roiManager("Select",4);
-    roiManager("Select",newArray(3,4));
-    roiManager("Combine");
-    roiManager("Add");
-    run("Select None");
+	roiManager("Select",4);	
+	roiManager("Select",newArray(3,4));
+	roiManager("Combine");
+	roiManager("Add");
+	run("Select None");
 
 	// Calculate relative spine fluorescence of green signal
 	selectWindow(green_fname);
@@ -340,11 +337,11 @@ macro "SpineFluorMeasure" {
 	print("Total cell fluorescence = "+b);
 	print("Background fluorescence = "+c+" +/- "+d);
 	print("Z-score = "+z);
-    run("Select None");
+	run("Select None");
 
 	// Save images
 	i =  lastIndexOf(red_fname,".");
-    red_fname = substring(red_fname,0,i);
+	red_fname = substring(red_fname,0,i);
 	selectWindow("cell");
 	saveAs("Tiff",path+red_fname+"_cell");
 	selectWindow("synapses");
