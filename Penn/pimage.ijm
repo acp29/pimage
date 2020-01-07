@@ -13,7 +13,7 @@ macro "PrepareImages" {
 	setBatchMode("true");
 	setOption("ScaleConversions",true)
 	print("\\Clear")
-	
+
 	// Load the Homer1c-tdTomato (red) and SEP-GluN1 (green) images
 	path_red = File.openDialog("Load red image");
 	open(path_red);
@@ -89,10 +89,125 @@ macro "PrepareImages" {
 	i =  lastIndexOf(green_fname,".");
     green_fname = substring(green_fname,0,i);
 	saveAs("Tiff",path+green_fname+"_green");
-	
+
 	// Combine regions of interest
 	selectWindow(red_fname+"_red.tif");
-    roiManager("Select",newArray(0,1));  // Select background and whole-cell ROI 
+    roiManager("Select",newArray(0,1));  // Select background and whole-cell ROI
+    roiManager("Combine");               // Combine ROI selections
+    roiManager("Add");                   // Add combined selection to ROI manager
+    run("Select All");
+
+	// Save ROIs
+	roiManager("Deselect");
+	roiManager("Save", path+"/prepROI.zip");
+
+}
+
+macro "PrepareImages_48bit_Color" {
+
+	// Protocol dialog
+	showMessageWithCancel("Protocol: Prepare images","Summary of protocol steps:\n"+
+										  			 "1: Dialog to load raw red image\n"+
+										  			 "2: Dialog to load raw green image\n"+
+												   	 "3: Manual alignment of red and green image planes\n"+
+										   			 "4: Prompt to continue with protocol when user completes alignment\n"+
+										   			 "Warning: Pressing OK will close all open images and reset ROI manager")
+	close("*");
+	roiManager("reset");
+	run("Clear Results");
+	setBatchMode("true");
+	setOption("ScaleConversions",true)
+	print("\\Clear")
+
+	// Load the Homer1c-tdTomato (red) and SEP-GluN1 (green) images
+	path_red = File.openDialog("Load red image");
+	run("Bio-Formats Importer", "open=[path_red] color_mode=Grayscale rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT");
+    rename("temp");
+    run("Hyperstack to Stack");
+    run("Stack to RGB");
+	w = getWidth();
+    h = getHeight();
+    path = getDirectory("image");
+	if (bitDepth() == 24) {
+		rename("1");
+		run("Split Channels");
+		close("1 (green)");
+		close("1 (blue)");
+	}
+	if (bitDepth() > 8) {
+		run("8-bit");
+	}
+	run("Remove Outliers...", "radius=2 threshold=50 which=Bright");
+	run("Remove Outliers...", "radius=2 threshold=50 which=Dark");
+	selectWindow("temp");
+    close();
+	path_green = File.openDialog("Load green image");
+	run("Bio-Formats Importer", "open=[path_green] color_mode=Grayscale rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT");
+    rename("temp");
+    run("Hyperstack to Stack");
+    run("Stack to RGB");
+	if ( (w != getWidth()) || (h != getHeight()) ) {
+		exit("Images must have the same dimenions");
+	}
+	if (path != getDirectory("image")) {
+		exit("Images must come from the same directory");
+	}
+		if (bitDepth() == 24) {
+		rename("2");
+		run("Split Channels");
+		close("2 (red)");
+		close("2 (blue)");
+	}
+	if (bitDepth() > 8) {
+		run("8-bit");
+	}
+	run("Remove Outliers...", "radius=2 threshold=50 which=Bright");
+	run("Remove Outliers...", "radius=2 threshold=50 which=Dark");
+	selectWindow("temp");
+    close();
+
+	// Perform image alignment
+	run("Images to Stack", "name=Stack title=[] use");
+	// Add a third slice at the end of the stack
+	setSlice(2);
+	run("Add Slice");
+	// Convert to 8-bit and then convert stack to RGB
+	run("Stack to RGB");
+	run("Enhance Contrast...", "saturated=0 normalize");
+	close("Stack");
+	run("ROI Manager...");
+	run("Align RGB planes");
+	setBatchMode("false");
+	setTool("polygon");
+	waitForUser("Alignment","1. Adjust alignment of the images using Align RGB window controls.\n"+
+							"2. Draw polygon around an area of background and press the key 't'.\n"+
+							"3. Draw polygon around the cell of interest and press the key 't'.\n"+
+							"4. Close the Align RGB window and click OK in this dialog.\n");
+
+	// Subtract uneven background
+	//run("Subtract Background...", "rolling=500 separate");
+
+    // Split channels
+	setBatchMode("true");
+	run("Split Channels");
+	close("Stack (RGB) (blue)");
+
+	// Save images
+	selectWindow("Stack (RGB) (red)");
+	run("Subtract Background...", "rolling=500 separate"); // Subtract uneven background
+	red_fname = File.getName(path_red);
+	i =  lastIndexOf(red_fname,".");
+    red_fname = substring(red_fname,0,i);
+	saveAs("Tiff",path+red_fname+"_red");
+	selectWindow("Stack (RGB) (green)");
+	green_fname = File.getName(path_green);
+	i =  lastIndexOf(green_fname,".");
+    green_fname = substring(green_fname,0,i);
+	saveAs("Tiff",path+green_fname+"_green");
+
+	// Combine regions of interest
+	selectWindow(red_fname+"_red.tif");
+    roiManager("Select",newArray(0,1));  // Select background and whole-cell ROI
     roiManager("Combine");               // Combine ROI selections
     roiManager("Add");                   // Add combined selection to ROI manager
     run("Select All");
@@ -156,7 +271,7 @@ macro "SpineFluorMeasure" {
 	run("Set Measurements...", "mean redirect=None decimal=9");
 	run("Measure");
 	bg = getResult("Mean",0);
-	roiManager("Select",2); 
+	roiManager("Select",2);
 	run("Subtract...","value="+bg);
 	run("Enhance Contrast", "saturated=0.0");
 	run("Apply LUT");
@@ -170,7 +285,7 @@ macro "SpineFluorMeasure" {
 
 	// Use median filter and global thresholding to create mask and ROI of synapses
 	selectWindow(red_fname);
-	roiManager("Select",1); 
+	roiManager("Select",1);
     run("Copy");
     run("Select None");
     newImage("original","8-bit black",w,h,1);
@@ -197,12 +312,12 @@ macro "SpineFluorMeasure" {
     run("Select None");
 
 	// Combine synapse and cell ROI for total ROI
-	selectWindow(red_fname);	
+	selectWindow(red_fname);
 	roiManager("Select",4);
     roiManager("Select",newArray(3,4));
-    roiManager("Combine");             
-    roiManager("Add");    
-    run("Select None");             
+    roiManager("Combine");
+    roiManager("Add");
+    run("Select None");
 
 	// Calculate relative spine fluorescence of green signal
 	selectWindow(green_fname);
@@ -234,14 +349,14 @@ macro "SpineFluorMeasure" {
 	saveAs("Tiff",path+red_fname+"_cell");
 	selectWindow("synapses");
 	saveAs("Tiff",path+red_fname+"_synapses");
-	
+
 	// Save ROIs
 	roiManager("Deselect");
 	roiManager("Save", path+"/spineFluorROI.zip");
-		
+
 	// Save log
 	selectWindow("Log");
-	saveAs("Text",path+"summary.txt"); 	
+	saveAs("Text",path+"summary.txt");
 
 	// Clear up
 	setBatchMode("false");
