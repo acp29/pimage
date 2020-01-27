@@ -467,6 +467,124 @@ macro "SpineFluorMeasure_red" {
 	print("\\Clear")
 
 	// Load the Homer1c-tdTomato (red) image
+	path_red = File.openDialog("Load red image");
+	open(path_red);
+	w = getWidth();
+	h = getHeight();
+        path = getDirectory("image");
+	if (bitDepth() == 24) {
+		rename("1");
+		run("Split Channels");
+		close("1 (green)");
+		close("1 (blue)");
+	}
+	if (bitDepth() > 8) {
+		run("8-bit");
+	}
+	run("Remove Outliers...", "radius=2 threshold=50 which=Bright");
+	run("Remove Outliers...", "radius=2 threshold=50 which=Dark");
+
+	// Load the SEP-GluN1 (green) images
+	// Defunct; use bioformats instead
+	path_green = File.openDialog("Load green image");
+	open(path_green);
+	if ( (w != getWidth()) || (h != getHeight()) ) {
+		exit("Images must have the same dimenions");
+	}
+	if (bitDepth() == 24) {
+		rename("2");
+		run("Split Channels");
+		close("2 (red)");
+		close("2 (blue)");
+	}
+	if (bitDepth() > 8) {
+		run("8-bit");
+	}
+	run("Remove Outliers...", "radius=2 threshold=50 which=Bright");
+	run("Remove Outliers...", "radius=2 threshold=50 which=Dark");
+
+	// Convert to RGB and normalize
+	run("Images to Stack", "name=Stack title=[] use");
+	setSlice(2);
+	run("Add Slice");
+	run("Stack to RGB");
+	run("Enhance Contrast...", "saturated=0 normalize");
+	close("Stack");
+
+	// Split channels
+	setBatchMode("true");
+	run("Split Channels");
+
+	// Close unwanted channels
+	selectWindow("Stack (RGB) (green)");
+	close();
+	selectWindow("Stack (RGB) (blue)");
+	close();
+
+	// Load spineFluorROI
+	run("ROI Manager...");
+	path_roi = File.openDialog("Load spineFluorROI.zip");
+	roiManager("Open",path_roi);
+
+	// Measure Background in original red image
+	run("Set Measurements...", "mean standard redirect=None decimal=9");
+	selectWindow("Stack (RGB) (red)");
+	run("Select None");
+	run("Subtract Background...", "rolling=500 create separate"); // Create uneven background
+	run("Clear Results");
+	roiManager("Select",0); // background subtracted at background ROI
+	run("Measure");
+	roiManager("Select",4); // background subtracted at spine ROI
+	run("Measure");
+	close();
+
+	// Load aligned and background-subtracted Homer1c-tdTomato (red) image
+	path_red = File.openDialog("Load red image");
+	open(path_red);
+	if ( (w != getWidth()) || (h != getHeight()) ) {
+		exit("Images must have the same dimenions");
+	}
+	red_fname = File.getName(path_red);
+	path = getDirectory("image");
+
+	// Calculate relative spine fluorescence of green signal
+	roiManager("Select",0); // background ROI (after background subtraction)
+	run("Measure");
+	roiManager("Select",4); // synapse ROI (after background subtraction)
+	run("Measure");
+	a = getResult("Mean",0) + getResult("Mean",2);      // Mean background fluorescence
+	b = getResult("Mean",1) + getResult("Mean",3);      // Mean synapse fluorescence
+	print("Synaptic fluorescence = "+b);
+	print("Background fluorescence = "+a);
+
+	// Save log
+	selectWindow("Log");
+	saveAs("Text",path+"red_summary.txt");
+
+	// Clear up
+	setBatchMode("false");
+}
+
+
+macro "SpineFluorMeasure_red_48bit_Color" {
+
+	// Protocol dialog
+	showMessageWithCancel("Protocol: Prepare images","Summary of protocol steps:\n"+
+										  			 "1: Dialog to load raw red image\n"+
+										  			 "2: Dialog to load raw green image\n"+
+										  			 "3: Dialog to load prepROI.zip\n"+
+										  			 "4: Dialog to load prepared red image\n"+
+										   			 "Warning: Pressing OK will close all open images and reset ROI manager")
+
+	// Initialize
+	close("*");
+	roiManager("reset");
+	run("Clear Results");
+	setBatchMode("true");
+	setOption("ScaleConversions",true)
+	print("\\Clear")
+
+	// Load the Homer1c-tdTomato (red) image
  	// Defunct; use bioformats instead
 	//path_red = File.openDialog("Load red image");
 	//open(path_red);
