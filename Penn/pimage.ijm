@@ -454,7 +454,7 @@ macro "SpineFluorMeasure_red" {
 	showMessageWithCancel("Protocol: Prepare images","Summary of protocol steps:\n"+
 										  			 "1: Dialog to load raw red image\n"+
 										  			 "2: Dialog to load raw green image\n"+
-										  			 "3: Dialog to load prepROI.zip\n"+
+										  			 "3: Dialog to load spineFluorROI.zip\n"+
 										  			 "4: Dialog to load prepared red image\n"+
 										   			 "Warning: Pressing OK will close all open images and reset ROI manager")
 
@@ -572,7 +572,7 @@ macro "SpineFluorMeasure_red_48bit_Color" {
 	showMessageWithCancel("Protocol: Prepare images","Summary of protocol steps:\n"+
 										  			 "1: Dialog to load raw red image\n"+
 										  			 "2: Dialog to load raw green image\n"+
-										  			 "3: Dialog to load prepROI.zip\n"+
+										  			 "3: Dialog to load spineFluorROI.zip\n"+
 										  			 "4: Dialog to load prepared red image\n"+
 										   			 "Warning: Pressing OK will close all open images and reset ROI manager")
 
