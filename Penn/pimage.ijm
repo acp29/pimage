@@ -201,6 +201,122 @@ macro "PrepareImages" {
 }
 
 
+
+macro "PrepareImages16bit" {
+
+	// Protocol dialog
+	showMessageWithCancel("Protocol: Prepare images","Summary of protocol steps:\n"+
+										  			 "1: Dialog to load raw red image\n"+
+										  			 "2: Dialog to load raw green image\n"+
+												   	 "3: Manual alignment of red and green image planes\n"+
+										   			 "4: Prompt to continue with protocol when user completes alignment\n"+
+										   			 "Warning: Pressing OK will close all open images and reset ROI manager")
+	close("*");
+	roiManager("reset");
+	run("Clear Results");
+	setBatchMode("true");
+	setOption("ScaleConversions",true)
+	print("\\Clear")
+
+	// Load the Homer1c-tdTomato (red) and SEP-GluN1 (green) images
+	path_red = File.openDialog("Load raw red image");
+	run("Bio-Formats Importer", "open=["+path_red+"] color_mode=Grayscale rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT");
+	//open(path_red);
+	path = getDirectory("image");
+	if (bitDepth() ==  16) {
+		rename("Red");
+		run("Make Substack...", "channels=1");
+		close("Red");
+	}
+    w = getWidth();
+	h = getHeight();
+	run("Remove Outliers...", "radius=2 threshold=50 which=Bright");
+	run("Remove Outliers...", "radius=2 threshold=50 which=Dark");
+
+
+	path_green = File.openDialog("Load raw green image");
+	run("Bio-Formats Importer", "open=["+path_green+"] color_mode=Grayscale rois_import=[ROI manager] view=Hyperstack stack_order=XYCZT");
+	if (path != getDirectory("image")) {
+		exit("Images must come from the same directory");
+	}
+	if (bitDepth() == 16) {
+		rename("Green");
+		run("Make Substack...", "channels=2");
+		close("Green");
+	}
+	if ( (w != getWidth()) || (h != getHeight()) ) {
+		exit("Images must have the same dimensions");
+	}
+	
+	run("Remove Outliers...", "radius=2 threshold=50 which=Bright");
+	run("Remove Outliers...", "radius=2 threshold=50 which=Dark");
+
+	// Perform image alignment
+	run("Images to Stack", "name=Stack title=[] use");
+	// Add a third slice at the end of the stack
+	setSlice(2);
+	run("Add Slice");
+	// Convert to 8-bit and then convert stack to RGB
+	run("Stack to RGB");
+	run("Enhance Contrast...", "saturated=0 normalize");
+	close("Stack");
+	run("ROI Manager...");
+	run("Align RGB planes");
+	setBatchMode("false");
+	setTool("polygon");
+
+	
+	waitForUser("Alignment","1. Adjust alignment of the images using Align RGB window controls.\n"+
+							"2. Draw polygon around the cell of interest and press the key 't'.\n"+
+							"3. Close the Align RGB window and click OK in this dialog.\n");
+							
+
+	// Subtract uneven background
+	//run("Subtract Background...", "rolling=500 separate");
+
+	// Split channels
+	setBatchMode("true");
+	run("Split Channels");
+	close("Stack (RGB) (blue)");
+    // Duplicate green and red images
+	selectWindow("Stack (RGB) (green)");
+	run("Duplicate...", " ");
+	selectWindow("Stack (RGB) (red)");
+	run("Duplicate...", " ");
+
+	// Create background green and red images
+	selectWindow("Stack (RGB) (green)-1");
+	run("Subtract Background...", "rolling=500 create sliding"); // create file for subtract uneven background with sliding paraboloid
+	green_fname = File.getName(path_green);
+	i =  lastIndexOf(green_fname,".");
+	green_fname = substring(green_fname,0,i);
+	saveAs("Tiff",path+green_fname+"_green_background");
+	selectWindow("Stack (RGB) (red)-1");
+	run("Subtract Background...", "rolling=500 create sliding"); // create file for subtract uneven background with sliding paraboloid
+	red_fname = File.getName(path_red);
+	i =  lastIndexOf(red_fname,".");
+	red_fname = substring(red_fname,0,i);
+	saveAs("Tiff",path+red_fname+"_red_background");
+
+	// Save images
+	selectWindow("Stack (RGB) (red)");
+	run("Subtract Background...", "rolling=500 sliding"); // Subtract uneven background
+	red_fname = File.getName(path_red);
+	i =  lastIndexOf(red_fname,".");
+	red_fname = substring(red_fname,0,i);
+	saveAs("Tiff",path+red_fname+"_red");
+	selectWindow("Stack (RGB) (green)");
+	run("Subtract Background...", "rolling=500 sliding"); // Subtract uneven background
+	green_fname = File.getName(path_green);
+	i =  lastIndexOf(green_fname,".");
+	green_fname = substring(green_fname,0,i);
+	saveAs("Tiff",path+green_fname+"_green");
+
+	// Save ROI
+	run("Select All");
+	roiManager("Deselect");
+	roiManager("Save", path+"/prepROI.zip");
+}
 macro "SpineFluorMeasure" {
 
 	// Protocol dialog
@@ -331,6 +447,161 @@ macro "SpineFluorMeasure" {
 	// Save ROIs
 	roiManager("Deselect");
 	roiManager("Save", path+"/spineFluorROI.zip");
+
+	// Save log
+	selectWindow("Log");
+	saveAs("Text",path+"summary.txt");
+
+	// Clear up
+	setBatchMode("false");
+}
+
+macro "SpineFluorMeasureSplit" {
+
+	// Protocol dialog
+	showMessageWithCancel("Protocol: Measure synaptic/total SEP-GluN1 fluorescence","Summary of protocol steps:\n"+
+										  			 "1: Dialog to load prepared red image\n"+
+										  			 "2: Dialog to load prepared green image\n"+
+										  			 "3: Dialog to load red background image\n"+
+										  			 "4: Dialog to load green background image\n"+
+										  			 "5: Dialog to load prepROI.zip\n"+
+										   			 "6: Specify radius of Median filter\n"+
+										   			 "Warning: Pressing OK will close all open images and reset ROI manager");
+	close("*");
+	roiManager("reset");
+	run("Clear Results");
+	setBatchMode("true");
+	setOption("ScaleConversions",true)
+	print("\\Clear")
+
+	// Load the Homer1c-tdTomato (red) and SEP-GluN1 (green) images
+	path_red = File.openDialog("Load prepared red image");
+	open(path_red);
+	w = getWidth();	
+	h = getHeight();
+	path = getDirectory("image");
+	path_green = File.openDialog("Load prepared green image");
+	open(path_green);
+	if ( (w != getWidth()) || (h != getHeight()) ) {
+		exit("Images must have the same dimenions");
+	}
+	if (path != getDirectory("image")) {
+		exit("Images must come from the same directory");
+	}
+
+	red_fname = File.getName(path_red);
+	green_fname = File.getName(path_green);
+
+		// Load the Homer1c-tdTomato (red) and SEP-GluN1 (green) background images
+	path_red_bkgnd = File.openDialog("Load red background image");
+	open(path_red_bkgnd);
+	w = getWidth();	
+	h = getHeight();
+	path = getDirectory("image");
+	path_green_bkgnd = File.openDialog("Load green background image");
+	open(path_green_bkgnd);
+	if ( (w != getWidth()) || (h != getHeight()) ) {
+		exit("Images must have the same dimenions");
+	}
+	if (path != getDirectory("image")) {
+		exit("Images must come from the same directory");
+	}
+	green_bkgnd_fname = File.getName(path_green_bkgnd);
+	red_bkgnd_fname = File.getName(path_red_bkgnd);
+
+	// Load prepROI
+	path_roi = File.openDialog("Load prepROI.zip");
+	roiManager("Open",path_roi);
+
+	//Subtract BG
+	
+
+	// Use median filter and global thresholding to create mask and ROI of synapses
+	selectWindow(red_fname);
+	roiManager("Select",0);
+	run("Copy");
+	run("Select None");
+	newImage("original","8-bit black",w,h,0);
+	roiManager("Select",0);
+	run("Paste");
+	newImage("filtered","8-bit black",w,h,0);
+	roiManager("Select",0);
+	run("Paste");
+	run("Median...");
+	imageCalculator("Subtract create", "original","filtered");
+	close("original");
+	close("filtered");
+	roiManager("Select",0);
+	run("Threshold...");
+	setThreshold(0,255);
+	call("ij.plugin.frame.ThresholdAdjuster.setMode", "B&W");
+	waitForUser("Alignment","Manually adjust global threshold then press OK");
+	run("Convert to Mask");
+	run("Median...","radius=1"); // Despeckle
+	run("Create Selection");
+	run("Make Inverse");
+	roiManager("Add");
+	rename("synapses");
+	roiManager("Split"); //Split the ROIs
+	nROIs = roiManager("count");
+	run("Select None");
+	run("Properties...", "channels=1 slices=1 frames=1 pixel_width=1.0000 pixel_height=1.0000 voxel_depth=1.0000 global"); //Helps us identify ROIs of 1 pixel by measuring area.
+
+	// Calculate relative spine fluorescence of green signal
+	run("Clear Results");
+	run("Set Measurements...", "area mean display redirect=None decimal=9");
+	print("Label, Pixels, Synaptic green fluorescence, Background green fluorescence, Synaptic red fluorescence, Background red fluorescence");
+	k=2;
+	do {
+		run("Select None");
+		run("Clear Results");
+		selectWindow(green_fname);
+		roiManager("Select",k); // synapse ROI on green background-subtracted image
+		run("Measure");
+		selectWindow(green_bkgnd_fname);
+		roiManager("Select",k); // synapse ROI on green background image
+		run("Measure");
+		
+		a = getResult("Mean",0);      // Mean synapse green fluorescence
+		b = getResult("Mean",1);      // Mean background green fluorescence
+
+		run("Clear Results");
+		selectWindow(red_fname);
+		roiManager("Select",k); // synapse ROI on green background-subtracted image
+		run("Measure");
+		selectWindow(red_bkgnd_fname);
+		roiManager("Select",k); // synapse ROI on green background image
+		run("Measure");
+		
+		c = getResult("Mean",0);		  // Mean synapse red fluorescence
+		d = getResult("Mean",1);      // Mean synapse red background fluorescence
+		
+		l = getResultLabel(0);
+		p = getResult("Area",0);
+
+		if (p>1) {
+		print(l+","+p+","+a+","+b+","+c+","+d);
+		} 
+
+		k=k+1;
+		
+		} while(k<nROIs);
+
+	run("Select None");
+
+	// Save mask of synapses
+	i =  lastIndexOf(red_fname,".");
+	red_fname = substring(red_fname,0,i);
+	selectWindow("synapses");
+	saveAs("Tiff",path+red_fname+"_synapses");
+
+	// Save ROIs
+	roiManager("Deselect");
+	roiManager("Save", path+"/spineFluorROI.zip");
+
+	//Save Results
+	selectWindow("Log");
+	saveAs("Text", path+"Results.csv");
 
 	// Save log
 	selectWindow("Log");
