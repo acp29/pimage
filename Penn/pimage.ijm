@@ -1,13 +1,13 @@
 macro "Multiloader" {
 
-// Protocol dialog
-	showMessageWithCancel("Protocol: Multiloader","Summary of protocol steps:\n"+
+      // Protocol dialog
+      showMessageWithCancel("Protocol: Multiloader","Summary of protocol steps:\n"+
 					"BEFORE STARTING: ensure red and green raw data subfolders are within a folder labelled with condition/coverslip/neuron number e.g. C456Yc2_1\n"+
 					"1: Dialog to choose a directory - select folder containing red and green raw data subfolders\n"+
 					"2: Dialog to load red image sequence\n"+
 					"3: Dialog to load green image sequence\n"+
 					"Press OK on this dialog to begin")
-	close("*");
+       close("*");
 
        dir=getDirectory("Choose a Directory"); 
        print(dir); 
@@ -273,6 +273,8 @@ macro "PrepareImages16bit" {
 	roiManager("Deselect");
 	roiManager("Save", path+"/prepROI.zip");
 }
+
+
 macro "SpineFluorMeasure" {
 
 	// Protocol dialog
@@ -405,6 +407,7 @@ macro "SpineFluorMeasure" {
 	// Clear up
 	setBatchMode("false");
 }
+
 
 macro "SpineFluorMeasureSplit" {
 
@@ -561,6 +564,7 @@ macro "SpineFluorMeasureSplit" {
 	setBatchMode("false");
 }
 
+
 macro "SpineMorphMeasure" {
 
 	// Load the Homer1c-tdTomato (red) images
@@ -662,6 +666,7 @@ macro "SpineMorphMeasure" {
 	selectWindow("Log");
 	saveAs("Text",path);
 }
+
 
 macro "red fix" {
 
