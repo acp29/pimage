@@ -1,46 +1,3 @@
-
-
-macro "red fix" {
-
-	roiManager("reset");
-	run("Clear Results");
-	setBatchMode("true");
-	setOption("ScaleConversions",true)
-	print("\\Clear")
-
-	// Load the Homer1c-tdTomato (red) and SEP-GluN1 (green) images
-	path_red = File.openDialog("Load raw red image");
-	open(path_red);
-	w = getWidth();
-	h = getHeight();
-	path = getDirectory("image");
-	if (bitDepth() == 24) {
-		rename("1");
-		run("Split Channels");
-		close("1 (green)");
-		close("1 (blue)");
-	}
-	if (bitDepth() > 8) {
-		run("8-bit");
-	}
-	run("Remove Outliers...", "radius=2 threshold=50 which=Bright");
-	run("Remove Outliers...", "radius=2 threshold=50 which=Dark");
-		
-
-	// Subtract uneven background
-	//run("Subtract Background...", "rolling=500 separate");
-
-	
-	// Save images
-	selectWindow("_AVG_stack_r.tif");
-	run("Subtract Background...", "rolling=500 sliding"); // Subtract uneven background
-	red_fname = File.getName(path_red);
-	i =  lastIndexOf(red_fname,".");
-	red_fname = substring(red_fname,0,i);
-	saveAs("Tiff",path+red_fname+"_red");
-	
-	}
-
 macro "Multiloader" {
 
 // Protocol dialog
@@ -52,29 +9,28 @@ macro "Multiloader" {
 					"Press OK on this dialog to begin")
 	close("*");
 
-dir=getDirectory("Choose a Directory"); 
-print(dir); 
-File.makeDirectory(dir); 
+       dir=getDirectory("Choose a Directory"); 
+       print(dir); 
+       File.makeDirectory(dir); 
 
-path_red = File.openDialog("Load first image in red image sequence");
-run("Image Sequence...", "open=[path_red]");
-run("Z Project...", "projection=[Average Intensity]");
+       path_red = File.openDialog("Load first image in red image sequence");
+       run("Image Sequence...", "open=[path_red]");
+       run("Z Project...", "projection=[Average Intensity]");
 
-// Save images as stack
+       // Save images as stack
+       red_name = File.getName(path_red);
+       selectWindow("AVG_Pos0");
+       saveAs("Tiff",dir+"_AVG_stack_r");
 
-red_name = File.getName(path_red);
-	selectWindow("AVG_Pos0");
-	saveAs("Tiff",dir+"_AVG_stack_r");
+       path_green = File.openDialog("Load first image in green image sequence");
+       run("Image Sequence...", "open=[path_green]");
+       run("Z Project...", "projection=[Average Intensity]");
 
-path_green = File.openDialog("Load first image in green image sequence");
-run("Image Sequence...", "open=[path_green]");
-run("Z Project...", "projection=[Average Intensity]");
-
-// Save image as stack
-
-green_name = File.getName(path_green);
-	selectWindow("AVG_Pos0");
-	saveAs("Tiff",dir+"_AVG_stack_g");
+       // Save image as stack
+       green_name = File.getName(path_green);
+       selectWindow("AVG_Pos0");
+       saveAs("Tiff",dir+"_AVG_stack_g");
+       
 }
 
 
@@ -160,7 +116,7 @@ macro "PrepareImages" {
 	setBatchMode("true");
 	run("Split Channels");
 	close("Stack (RGB) (blue)");
-    // Duplicate green and red images
+        // Duplicate green and red images
 	selectWindow("Stack (RGB) (green)");
 	run("Duplicate...", " ");
 	selectWindow("Stack (RGB) (red)");
@@ -228,7 +184,7 @@ macro "PrepareImages16bit" {
 		run("Make Substack...", "channels=1");
 		close("Red");
 	}
-    w = getWidth();
+        w = getWidth();
 	h = getHeight();
 	run("Remove Outliers...", "radius=2 threshold=50 which=Bright");
 	run("Remove Outliers...", "radius=2 threshold=50 which=Dark");
@@ -278,7 +234,7 @@ macro "PrepareImages16bit" {
 	setBatchMode("true");
 	run("Split Channels");
 	close("Stack (RGB) (blue)");
-    // Duplicate green and red images
+        // Duplicate green and red images
 	selectWindow("Stack (RGB) (green)");
 	run("Duplicate...", " ");
 	selectWindow("Stack (RGB) (red)");
@@ -413,11 +369,8 @@ macro "SpineFluorMeasure" {
 	run("Measure");
 	a = getResult("Mean",0);      // Mean synapse green fluorescence
 	b = getResult("Mean",1);      // Mean background green fluorescence
-	c = getResult("StdDev",1);  // Standard deviation background green fluorescence
-	z = (a-b)/c;
 	print("Synaptic green fluorescence = "+a);
-	print("Background green fluorescence = "+b+" +/- "+c);
-	print("Z-score (green) = "+z);
+	print("Background green fluorescence = "+b);
 	run("Select None");
 
 	// Calculate relative spine fluorescence of red signal
@@ -431,11 +384,8 @@ macro "SpineFluorMeasure" {
 	run("Measure");
 	a = getResult("Mean",0);      // Mean synapse red fluorescence
 	b = getResult("Mean",1);      // Mean background red fluorescence
-	c = getResult("StdDev",1);  // Standard deviation background red fluorescence
-	z = (a-b)/c;
 	print("Synaptic red fluorescence = "+a);
-	print("Background red fluorescence = "+b+" +/- "+c);
-	print("Z-score (red) = "+z);
+	print("Background red fluorescence = "+b);
 	run("Select None");
 
 	// Save mask of synapses
@@ -567,14 +517,14 @@ macro "SpineFluorMeasureSplit" {
 
 		run("Clear Results");
 		selectWindow(red_fname);
-		roiManager("Select",k); // synapse ROI on green background-subtracted image
+		roiManager("Select",k);       // synapse ROI on green background-subtracted image
 		run("Measure");
 		selectWindow(red_bkgnd_fname);
-		roiManager("Select",k); // synapse ROI on green background image
+		roiManager("Select",k);      // synapse ROI on green background image
 		run("Measure");
 		
-		c = getResult("Mean",0);		  // Mean synapse red fluorescence
-		d = getResult("Mean",1);      // Mean synapse red background fluorescence
+		c = getResult("Mean",0);     // Mean synapse red fluorescence
+		d = getResult("Mean",1);     // Mean synapse red background fluorescence
 		
 		l = getResultLabel(0);
 		p = getResult("Area",0);
@@ -688,10 +638,10 @@ macro "SpineMorphMeasure" {
 	} while(i<=n);
 
 	//Calculate spine density
-     l = (sqrt(pow(x1-x2,2)+pow(y1-y2,2))*p);
+        l = (sqrt(pow(x1-x2,2)+pow(y1-y2,2))*p);
 	d = count/l;
-     print(d+" - d");
-     print(l+" - l");
+        print(d+" - d");
+        print(l+" - l");
 	run("Clear Results");
 
 	//Saving ROI .zip file
@@ -712,3 +662,44 @@ macro "SpineMorphMeasure" {
 	selectWindow("Log");
 	saveAs("Text",path);
 }
+
+macro "red fix" {
+
+	roiManager("reset");
+	run("Clear Results");
+	setBatchMode("true");
+	setOption("ScaleConversions",true)
+	print("\\Clear")
+
+	// Load the Homer1c-tdTomato (red) and SEP-GluN1 (green) images
+	path_red = File.openDialog("Load raw red image");
+	open(path_red);
+	w = getWidth();
+	h = getHeight();
+	path = getDirectory("image");
+	if (bitDepth() == 24) {
+		rename("1");
+		run("Split Channels");
+		close("1 (green)");
+		close("1 (blue)");
+	}
+	if (bitDepth() > 8) {
+		run("8-bit");
+	}
+	run("Remove Outliers...", "radius=2 threshold=50 which=Bright");
+	run("Remove Outliers...", "radius=2 threshold=50 which=Dark");
+		
+
+	// Subtract uneven background
+	//run("Subtract Background...", "rolling=500 separate");
+
+	
+	// Save images
+	selectWindow("_AVG_stack_r.tif");
+	run("Subtract Background...", "rolling=500 sliding"); // Subtract uneven background
+	red_fname = File.getName(path_red);
+	i =  lastIndexOf(red_fname,".");
+	red_fname = substring(red_fname,0,i);
+	saveAs("Tiff",path+red_fname+"_red");
+	
+	}
